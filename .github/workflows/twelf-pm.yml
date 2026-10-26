@@ -1,0 +1,35 @@
+name: twelf-pm
+on: [push, pull_request]
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: note
+        run: |
+          echo "Full build needs SML/NJ + Twelf on PATH."
+          echo "This job checks repository layout and scripts."
+      - name: layout
+        run: |
+          test -x bin/twelf-pm
+          test -f s/cli.sml
+          test -f LICENSE
+          test -f VERSION
+          test -f packages/natlib/nat.elf
+          test -f registry/index.json
+          test -f examples/neuroasm.twelf.toml
+      - name: syntax bash
+        run: bash -n bin/twelf-pm
+  twelf:
+    runs-on: ubuntu-latest
+    if: ${{ vars.TWELF_AVAILABLE == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: ~/.twelf-pm
+          key: ${{ runner.os }}-twelf-pm-${{ hashFiles('**/twelf-pm.lock') }}
+      - name: build
+        run: bash bin/twelf-pm build --force --strict
+      - name: check
+        run: bash bin/twelf-pm check --json

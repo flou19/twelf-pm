@@ -1,0 +1,12 @@
+*.ok
+.buildhash
+twelf-pm.lock
+docs/
+badges/
+paper/
+deps.dot
+vendor/
+.cm/
+*.heap
+*~
+.DS_Store

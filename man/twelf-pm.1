@@ -1,0 +1,16 @@
+.TH TWELF-PM 1
+.SH NAME
+twelf-pm \- offline package manager and toolchain for Twelf
+.SH SYNOPSIS
+.B twelf-pm
+[\fIcommand\fR] [\fIflags\fR]
+.SH DESCRIPTION
+Declarative Twelf project tool: lockfile, namespace isolation, build, doc, LSP.
+Depends only on SML/NJ and Twelf. Fully offline.
+.SH COMMANDS
+check, build, tree, verify, doctor, outdated, info, search, yank, graph, completion, test,
+init, new, add, vendor, publish, ns, fmt, debug, doc, latex, lsp, hook, badge
+.SH FLAGS
+--json --locked --force --strict --no-rewrite --timings --verbose --quiet --no-color
+.SH EXIT CODES
+0 ok, 1 build, 2 config, 3 namespace, 4 lockfile, 5 registry

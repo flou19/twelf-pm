@@ -1,0 +1,24 @@
+name: twelf-pm
+description: Build and check Twelf projects with twelf-pm (requires SML/NJ and Twelf on runner)
+inputs:
+  command:
+    description: build | check | ns | test
+    default: check
+  strict:
+    description: fail on namespace conflicts
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - run: |
+        set -e
+        FLAGS=""
+        if [ "${{ inputs.strict }}" = "true" ]; then FLAGS="$FLAGS --strict"; fi
+        case "${{ inputs.command }}" in
+          build) bash "${{ github.action_path }}/bin/twelf-pm" build --force $FLAGS ;;
+          check) bash "${{ github.action_path }}/bin/twelf-pm" check $FLAGS ;;
+          ns) bash "${{ github.action_path }}/bin/twelf-pm" ns $FLAGS ;;
+          test) bash "${{ github.action_path }}/bin/twelf-pm" test ;;
+          *) bash "${{ github.action_path }}/bin/twelf-pm" ${{ inputs.command }} ;;
+        esac
+      shell: bash
