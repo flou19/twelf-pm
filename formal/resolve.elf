@@ -1,0 +1,10 @@
+pkg : type.
+dep : pkg -> range -> type.
+lock : pkg -> ver -> type.
+index : pkg -> ver -> type.
+resolve : pkg -> range -> ver -> type.
+resolve/hit : index P V -> sat R V -> resolve P R V.
+unique : pkg -> ver -> ver -> type.
+unique/eq : unique P V V.
+term : type.
+term/done : term.

@@ -1,6 +1,6 @@
 structure Cli = struct
 fun usage () = U.outln
-  "twelf-pm check|build|tree|verify|doctor|outdated|info|search|yank|graph|completion|test|...\n  flags: --json --locked --force --strict --no-rewrite --timings --verbose --quiet --no-color"
+  "twelf-pm check|build|lint|ci|resolve|tree|verify|doctor|test|update --self|...\n  flags: --json --locked --frozen --force --strict --no-rewrite --timings --verbose --quiet --no-color"
 fun has (f:string) xs = List.exists (fn (x:string) => x = f) xs
 fun baseOpts () = Opt.applyFlags (Opt.fromToml "twelf.toml") []
 fun applyLog flags =
@@ -12,7 +12,7 @@ fun loadMan () =
 fun init name =
   let val name = if name = "" then "project" else name
       val _ = U.mkdir "t"
-      val m = {name=name, version="0.1.0", modules=["main.elf"], deps=[], elfDir="t"}
+      val m = {name=name, version="0.1.0", modules=["main.elf"], deps=[], devDeps=[], elfDir="t"}
       val _ = Man.save "twelf.toml" m
       val _ = if U.exists "t/main.elf" then ()
               else U.writeFile "t/main.elf" "nat : type.\nz : nat.\ns : nat -> nat.\n"
@@ -29,14 +29,14 @@ fun add pkg =
   let val m = if U.exists "twelf.toml" then Man.load "twelf.toml" else Man.empty "project"
       val d = Man.parseDep pkg
       val deps = d :: List.filter (fn x => #name x <> #name d) (#deps m)
-      val m = {name= #name m, version= #version m, modules= #modules m, deps=deps, elfDir= #elfDir m}
+      val m = {name= #name m, version= #version m, modules= #modules m, deps=deps, devDeps= #devDeps m, elfDir= #elfDir m}
       val _ = Man.save "twelf.toml" m
       val p = Res.installDep d
       val opts = baseOpts ()
       val cs = Ns.conflicts (#elfDir m) [p]
       val _ = U.out (Ns.report cs)
       val _ = if #strict opts andalso not (null cs) then Ex.die Ex.ns "ns: strict conflict" else ()
-      val _ = Lock.save (Lock.fromDeps m [p] @ List.filter (fn (x:Lock.pkg) => #name x <> #name d) (Lock.load ()))
+      val _ = Lock.save (Lock.fromProject m [p])
   in U.outln ("add " ^ #name d ^ " @ " ^ p) end
 fun nsCheck flags =
   let val opts = Opt.applyFlags (baseOpts ()) flags
@@ -48,18 +48,19 @@ fun nsCheck flags =
 fun doBuild flags =
   let val _ = applyLog flags
       val opts = Opt.applyFlags (baseOpts ()) flags
-      val locked = has "--locked" flags
+      val locked = has "--locked" flags orelse has "--frozen" flags
+      val frozen = has "--frozen" flags orelse locked
       val timings = has "--timings" flags
       val json = has "--json" flags
       val t0 = Tm.now ()
       val m = if U.exists "twelf.toml" then Man.load "twelf.toml" else
-                {name="project", version="0.1.0", modules=Man.discoverModules "t", deps=[], elfDir="t"}
+                {name="project", version="0.1.0", modules=Man.discoverModules "t", deps=[], devDeps=[], elfDir="t"}
       val m = Man.ensureModules m
       val t1 = Tm.now ()
       val paths = Res.installAll m opts
       val t2 = Tm.now ()
       val _ = if locked then
-                case Lock.verify m paths of
+                case Lock.verify m paths frozen of
                   [] => ()
                 | es => Ex.die Ex.lock ("locked: " ^ U.join "; " es)
               else ()
@@ -87,7 +88,7 @@ fun check flags =
       val paths = map Res.installDep (#deps m)
       val cs = Ns.conflicts (#elfDir m) paths
       val _ = if not (null cs) then push "ns conflict" else ()
-      val lockE = if U.exists "twelf-pm.lock" then Lock.verify m paths else []
+      val lockE = if U.exists "twelf.lock" orelse U.exists "twelf-pm.lock" then Lock.verify m paths true else []
       val _ = if not (null lockE) then push ("lock: " ^ hd lockE) else ()
       val okBuild = (Build.build m true handle _ => false)
       val _ = if not okBuild then push "build" else ()
@@ -105,7 +106,7 @@ fun check flags =
 fun verify flags =
   let val m = loadMan ()
       val paths = map Res.installDep (#deps m)
-      val es = Lock.verify m paths
+      val es = Lock.verify m paths true
       val json = has "--json" flags
   in if json then
        U.outln ("{\"ok\":" ^ Bool.toString (null es) ^ ",\"errors\":[" ^
@@ -139,7 +140,7 @@ fun main args =
   | ["update"] =>
       let val m = Man.ensureModules (loadMan ())
           val paths = map Res.installDep (#deps m)
-      in Lock.save (Lock.fromDeps m paths); U.outln "update lock" end
+      in Lock.save (Lock.fromProject m paths); U.outln "update lock" end
   | ["fmt"] => (Fmt.formatDir "t"; U.outln "fmt ok")
   | "debug"::flags =>
       let val opts = Opt.applyFlags (baseOpts ()) flags
@@ -156,7 +157,7 @@ fun main args =
   | ["lsp"] => Lsp.serve ()
   | ["import"] =>
       let val mods = Cfg.fromSources "t/sources.cfg"
-          val m = {name="project", version="0.1.0", modules=mods, deps=[], elfDir="t"}
+          val m = {name="project", version="0.1.0", modules=mods, deps=[], devDeps=[], elfDir="t"}
       in Man.save "twelf.toml" m; U.outln ("import " ^ Int.toString (length mods)) end
   | ["deps"] => app (fn d => U.outln (#name d ^ "@" ^ #version d)) (#deps (loadMan ()))
   | ["order"] => app U.outln (Res.order (Man.ensureModules (loadMan ())))
@@ -171,7 +172,22 @@ fun main args =
   | "graph"::_ => graph ()
   | ["completion", sh] => U.out (Comp.gen sh)
   | ["completion"] => U.out (Comp.gen "bash")
+  | ["resolve"] =>
+      let val m = loadMan ()
+          val (ch, cs) = Solve.resolve m
+          val _ = app (fn c => U.outln (#name c ^ "@" ^ #version c ^ " -> " ^ #path c)) ch
+          val _ = if null cs then () else U.out (Solve.explain cs)
+      in if null cs then () else Ex.die Ex.registry "resolve failed" end
+  | ["lint"] => U.out (Lint.run "t" false)
+  | "lint"::flags => U.out (Lint.run "t" (List.exists (fn x => x = "--json") flags))
+  | ["ci", k] => Ci.gen k
+  | ["ci"] => Ci.gen "github"
+  | ["update", "--self"] => SelfUp.update ()
   | ["test"] => Self.run ()
+  | "test"::flags =>
+      let val m = Man.withDev (if U.exists "twelf.toml" then Man.load "twelf.toml" else Man.empty "p")
+          val _ = Res.installAll m (baseOpts ())
+      in Self.run () end
   | ["workspace", "build"] => (if Ws.buildAll false then () else Ex.die Ex.build "workspace build fail")
   | ["workspace", "build", "--force"] => (if Ws.buildAll true then () else Ex.die Ex.build "workspace build fail")
   | ["workspace", "check"] => (if Ws.checkAll () then U.outln "workspace check ok" else Ex.die Ex.build "workspace check fail")

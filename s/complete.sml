@@ -1,7 +1,7 @@
 structure Comp = struct
 val cmds = ["init","new","add","vendor","publish","ns","build","check","tree","verify",
             "update","fmt","debug","doc","latex","lsp","import","deps","order","hook",
-            "badge","plugin","doctor","outdated","yank","info","search","graph","completion","test"]
+            "badge","plugin","doctor","outdated","yank","info","search","graph","completion","test","lint","ci","update"]
 fun bash () =
   "_twelf_pm() {\n" ^
   "  local cur=${COMP_WORDS[COMP_CWORD]}\n" ^

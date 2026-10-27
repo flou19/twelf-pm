@@ -3,7 +3,7 @@ fun write path body = (U.mkdir (OS.Path.dir path handle _ => "."); U.writeFile p
 fun basic name =
   let val _ = U.mkdir "t"
       val _ = Man.save "twelf.toml"
-        {name=name, version="0.1.0", modules=["main.elf"], deps=[], elfDir="t"}
+        {name=name, version="0.1.0", modules=["main.elf"], deps=[], devDeps=[], elfDir="t"}
       val _ = U.writeFile "t/main.elf"
         "nat : type.\nz : nat.\ns : nat -> nat.\n"
       val _ = Cfg.write "t/sources.cfg" ["main.elf"]
@@ -11,7 +11,7 @@ fun basic name =
 fun logic name =
   let val _ = U.mkdir "t"
       val _ = Man.save "twelf.toml"
-        {name=name, version="0.1.0", modules=["prop.elf","proof.elf"], deps=[], elfDir="t"}
+        {name=name, version="0.1.0", modules=["prop.elf","proof.elf"], deps=[], devDeps=[], elfDir="t"}
       val _ = U.writeFile "t/prop.elf"
         "prop : type.\ntrue : prop.\nand : prop -> prop -> prop.\nimp : prop -> prop -> prop.\n"
       val _ = U.writeFile "t/proof.elf"
@@ -21,7 +21,7 @@ fun logic name =
 fun pl name =
   let val _ = U.mkdir "t"
       val _ = Man.save "twelf.toml"
-        {name=name, version="0.1.0", modules=["syn.elf","sem.elf"], deps=[], elfDir="t"}
+        {name=name, version="0.1.0", modules=["syn.elf","sem.elf"], deps=[], devDeps=[], elfDir="t"}
       val _ = U.writeFile "t/syn.elf"
         "exp : type.\nnum : nat -> exp.\nadd : exp -> exp -> exp.\nnat : type.\nz : nat.\ns : nat -> nat.\n"
       val _ = U.writeFile "t/sem.elf"

@@ -1,0 +1,10 @@
+ver : type.
+v : nat -> nat -> nat -> ver.
+range : type.
+r/exact : ver -> range.
+r/caret : ver -> range.
+r/any : range.
+sat : range -> ver -> type.
+sat/exact : sat (r/exact V) V.
+sat/caret : sat (r/caret (v Mj Mn P)) (v Mj Mn P).
+sat/any : sat r/any V.

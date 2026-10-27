@@ -1,10 +1,8 @@
 structure Build = struct
 fun stampPath elfDir = OS.Path.joinDirFile {dir=elfDir, file=".ok"}
 fun hashModules modules dir =
-  let fun h f =
-        let val p = OS.Path.joinDirFile {dir=dir, file=f}
-        in f ^ ":" ^ Time.toString (U.mtime p) end
-  in U.join ";" (map h modules) end
+  let fun h f = f ^ ":" ^ Sha.hashFile (OS.Path.joinDirFile {dir=dir, file=f})
+  in Sha.hashString (U.join ";" (map h modules)) end
 fun cachePath elfDir = OS.Path.joinDirFile {dir=elfDir, file=".buildhash"}
 fun needsRebuild (m:Man.t) =
   let val mods = #modules (Man.ensureModules m)
@@ -17,10 +15,7 @@ fun writeHash (m:Man.t) =
 fun twelfBin () =
   case OS.Process.getEnv "TWELF_SERVER" of
     SOME p => p
-  | NONE =>
-      let val candidates = ["/usr/local/bin/twelf-server", "twelf-server"]
-          fun ok p = U.exists p orelse p = "twelf-server"
-      in case List.find ok candidates of SOME p => p | NONE => "twelf-server" end
+  | NONE => if U.exists "/usr/local/bin/twelf-server" then "/usr/local/bin/twelf-server" else "twelf-server"
 fun runTwelf cfgDir =
   let val tw = twelfBin ()
       val cmd = "cd " ^ cfgDir ^ " && printf 'set chatter 1\\nmake sources.cfg\\nquit\\n' | " ^ tw ^ " 2>&1"
@@ -41,12 +36,12 @@ fun build (m:Man.t) force =
            val _ = U.out out
            val issues = Dbg.parseOutput out
            val _ = if null issues then () else U.out (Dbg.render issues)
-       in if ok
-          then (U.writeFile (stampPath (#elfDir m)) "OK\n"; writeHash m;
-                let val paths = map Res.installDep (#deps m)
-                    val _ = Lock.save (Lock.fromDeps m paths)
-                in () end;
-                U.outln "ok"; true)
+       in if ok then
+            (U.writeFile (stampPath (#elfDir m)) "OK\n"; writeHash m;
+             let val paths = map Res.installDep (#deps m)
+                 val _ = Lock.save (Lock.fromProject m paths)
+             in () end;
+             U.outln "ok"; true)
           else (if U.exists (stampPath (#elfDir m)) then OS.FileSys.remove (stampPath (#elfDir m)) handle _ => () else ();
                 U.outln "fail"; false)
        end

@@ -1,7 +1,7 @@
 structure Man = struct
 type dep = {name:string, version:string, source:string}
-type t = {name:string, version:string, modules:string list, deps:dep list, elfDir:string}
-fun empty name = {name=name, version="0.1.0", modules=[], deps=[], elfDir="t"}
+type t = {name:string, version:string, modules:string list, deps:dep list, devDeps:dep list, elfDir:string}
+fun empty name = {name=name, version="0.1.0", modules=[], deps=[], devDeps=[], elfDir="t"}
 fun parseDep s =
   if U.startsWith "/" s orelse U.startsWith "./" s orelse U.startsWith "../" s then
     {name=s, version="local", source=s}
@@ -17,19 +17,23 @@ fun load path =
       val elfDir = getOpt (Toml.getStr t "package.elf-dir", "t")
       val modules = Toml.getStrList t "package.modules"
       val deps = map parseDep (Toml.getStrList t "dependencies.list")
-  in {name=name, version=version, modules=modules, deps=deps, elfDir=elfDir} end
+      val devDeps = map parseDep (Toml.getStrList t "dev-dependencies.list")
+  in {name=name, version=version, modules=modules, deps=deps, devDeps=devDeps, elfDir=elfDir} end
 fun save path (m:t) =
-  let val body =
+  let fun depStr (d:dep) =
+        if #source d <> "local" andalso #source d <> "registry"
+        then "\"" ^ #source d ^ "\""
+        else "\"" ^ #name d ^ "@" ^ #version d ^ "\""
+      val body =
         "[package]\n" ^
         "name = \"" ^ #name m ^ "\"\n" ^
         "version = \"" ^ #version m ^ "\"\n" ^
         "elf-dir = \"" ^ #elfDir m ^ "\"\n" ^
         "modules = [" ^ U.join ", " (map (fn x => "\"" ^ x ^ "\"") (#modules m)) ^ "]\n\n" ^
         "[dependencies]\n" ^
-        "list = [" ^ U.join ", " (map (fn d =>
-          if #source d <> "local" andalso #source d <> "registry"
-          then "\"" ^ #source d ^ "\""
-          else "\"" ^ #name d ^ "@" ^ #version d ^ "\"") (#deps m)) ^ "]\n"
+        "list = [" ^ U.join ", " (map depStr (#deps m)) ^ "]\n\n" ^
+        "[dev-dependencies]\n" ^
+        "list = [" ^ U.join ", " (map depStr (#devDeps m)) ^ "]\n"
   in U.writeFile path body end
 fun isort xs =
   let fun ins (x:string) [] = [x]
@@ -50,8 +54,10 @@ fun discoverModules dir =
   end
 fun ensureModules (m:t) =
   case #modules m of
-    [] => {name= #name m, version= #version m,
-           modules= discoverModules (#elfDir m),
-           deps= #deps m, elfDir= #elfDir m}
+    [] => {name= #name m, version= #version m, modules= discoverModules (#elfDir m),
+           deps= #deps m, devDeps= #devDeps m, elfDir= #elfDir m}
   | _ => m
+fun withDev (m:t) =
+  {name= #name m, version= #version m, modules= #modules m,
+   deps= #deps m @ #devDeps m, devDeps= #devDeps m, elfDir= #elfDir m}
 end

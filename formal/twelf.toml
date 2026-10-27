@@ -1,0 +1,8 @@
+[package]
+name = "twelf-pm-formal"
+version = "0.2.0"
+elf-dir = "."
+modules = ["nat.elf", "ver.elf", "resolve.elf"]
+
+[dependencies]
+list = []

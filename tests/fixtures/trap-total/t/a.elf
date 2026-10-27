@@ -1,0 +1,7 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+add : nat -> nat -> nat -> type.
+add/z : add z N N.
+%mode add +A +B -C.
+%worlds () (add A _ _).

@@ -1,0 +1,7 @@
+nat : type.
+z : nat.
+p : nat -> type.
+p/z : p z.
+%mode p +A.
+%worlds () (p A).
+%total

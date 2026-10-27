@@ -1,0 +1,15 @@
+lock-version = 2
+cfg-sha256 = "1e5f8680097e03b5d936c73ada6ae26d2a778a599753517b0c5974154974988a"
+
+[[module]]
+file = "nat.elf"
+sha256 = "4d17430235c7b916f69a567d8c6ae20d16a687b23188366ab3160e01e356601c"
+
+[[module]]
+file = "ver.elf"
+sha256 = "d6cd5a21aaeaa610c0741a51d80eb9221a8455173b234b5b46115b37899cd1ac"
+
+[[module]]
+file = "resolve.elf"
+sha256 = "415e9f2b440ca27559afa1d17caec10f1f49ed8e4c8cab1cc93c875b3ccc296f"
+

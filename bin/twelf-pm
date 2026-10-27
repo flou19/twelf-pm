@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export TWELF_PM_ROOT="${TWELF_PM_ROOT:-$ROOT}"
 SML="${SML:-sml}"
 command -v "$SML" >/dev/null 2>&1 || SML="/usr/local/bin/sml"
 ARGS="["
@@ -16,11 +17,13 @@ exec "$SML" <<SML
 app use [
   "${ROOT}/s/util.sml","${ROOT}/s/toml.sml","${ROOT}/s/semver.sml","${ROOT}/s/opts.sml",
   "${ROOT}/s/exit.sml","${ROOT}/s/color.sml","${ROOT}/s/cfgx.sml","${ROOT}/s/log.sml","${ROOT}/s/time.sml",
-  "${ROOT}/s/hash.sml","${ROOT}/s/manifest.sml","${ROOT}/s/cfg.sml","${ROOT}/s/ns.sml","${ROOT}/s/reg.sml",
-  "${ROOT}/s/lock.sml","${ROOT}/s/resolve.sml","${ROOT}/s/fmt.sml","${ROOT}/s/debug.sml","${ROOT}/s/build.sml",
-  "${ROOT}/s/doc.sml","${ROOT}/s/tmpl.sml","${ROOT}/s/lsp.sml","${ROOT}/s/hook.sml","${ROOT}/s/badge.sml",
-  "${ROOT}/s/plugin.sml","${ROOT}/s/doctor.sml","${ROOT}/s/tree.sml","${ROOT}/s/pkgops.sml","${ROOT}/s/graph.sml",
-  "${ROOT}/s/ws.sml","${ROOT}/s/complete.sml","${ROOT}/s/selftest.sml","${ROOT}/s/cli.sml"
+  "${ROOT}/s/sha256.sml","${ROOT}/s/hash.sml","${ROOT}/s/manifest.sml","${ROOT}/s/cfg.sml","${ROOT}/s/ns.sml",
+  "${ROOT}/s/reg.sml","${ROOT}/s/lock.sml","${ROOT}/s/cache.sml","${ROOT}/s/solve.sml","${ROOT}/s/resolve.sml",
+  "${ROOT}/s/fmt.sml","${ROOT}/s/debug.sml","${ROOT}/s/build.sml","${ROOT}/s/doc.sml","${ROOT}/s/tmpl.sml",
+  "${ROOT}/s/lint.sml","${ROOT}/s/ci.sml","${ROOT}/s/selfup.sml",
+  "${ROOT}/s/lsp.sml","${ROOT}/s/hook.sml","${ROOT}/s/badge.sml","${ROOT}/s/plugin.sml","${ROOT}/s/doctor.sml",
+  "${ROOT}/s/tree.sml","${ROOT}/s/pkgops.sml","${ROOT}/s/graph.sml","${ROOT}/s/ws.sml","${ROOT}/s/complete.sml",
+  "${ROOT}/s/selftest.sml","${ROOT}/s/cli.sml"
 ];
 Cli.main (${ARGS});
 SML

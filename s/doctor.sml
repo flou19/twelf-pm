@@ -8,6 +8,10 @@ fun versionSml () =
       val _ = OS.FileSys.remove tmp handle _ => ()
       val ls = U.lines s
   in case ls of l::_ => U.trim l | [] => "unknown" end
+fun lockPath () =
+  if U.exists "twelf.lock" then SOME "twelf.lock"
+  else if U.exists "twelf-pm.lock" then SOME "twelf-pm.lock"
+  else NONE
 fun check () =
   let val lines = ref ([]:string list)
       fun ok s = lines := ("[✓] " ^ s) :: !lines
@@ -26,10 +30,13 @@ fun check () =
                 in if n > 0 then warn ("vendor/ contains " ^ Int.toString n ^ " entries") else ok "vendor/: empty"
                 end
               else ok "vendor/: absent"
-      val _ = if U.exists "twelf-pm.lock" andalso U.exists "twelf.toml" then
-                if U.newer "twelf.toml" "twelf-pm.lock" then warn "twelf-pm.lock exists but twelf.toml is newer"
-                else ok "lockfile: in sync with toml mtime"
-              else if U.exists "twelf-pm.lock" then ok "lockfile: present"
-              else warn "lockfile: missing"
+      val _ = case lockPath () of
+                SOME lp =>
+                  if U.exists "twelf.toml" andalso U.newer "twelf.toml" lp then
+                    warn (lp ^ " exists but twelf.toml is newer")
+                  else ok ("lockfile: " ^ lp)
+              | NONE => warn "lockfile: missing"
+      val _ = if U.exists "VERSION" then ok ("twelf-pm VERSION: " ^ U.trim (U.readFile "VERSION"))
+              else ()
   in String.concatWith "\n" (List.rev (!lines)) ^ "\n" end
 end

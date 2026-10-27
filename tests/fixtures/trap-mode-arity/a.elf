@@ -1,0 +1,6 @@
+nat : type.
+z : nat.
+eq : nat -> nat -> type.
+eq/z : eq z z.
+%mode eq +A +B.
+%worlds () (eq A B).

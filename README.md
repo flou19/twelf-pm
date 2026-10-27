@@ -1,5 +1,7 @@
 # twelf-pm
 
+**v0.2.0** — content-addressed lockfile, formal resolve fragment, offline-first.
+
 Offline package manager and project toolchain for [Twelf](https://twelf.org).
 Requires only **SML/NJ** and **Twelf**. No network needed at runtime.
 
